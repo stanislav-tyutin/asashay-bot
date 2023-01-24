@@ -39,7 +39,11 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def status(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await context.bot.send_message(chat_id=update.effective_chat.id, text=datetime.strftime(min_date, '%Y-%m-%d %H:%M:%S'))
+    if last_update is not None:
+        await context.bot.send_message(chat_id=update.effective_chat.id,
+                                       text=datetime.strftime(last_update, '%Y-%m-%d %H:%M:%S'))
+    else:
+        await context.bot.send_message(chat_id=update.effective_chat.id, text='Never')
 
 
 async def set_session(update: Update, context: ContextTypes.DEFAULT_TYPE):
