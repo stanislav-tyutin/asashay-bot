@@ -9,16 +9,23 @@ import random
 
 def loop():
     global min_date
+    global session
+    global last_update
     while True:
         if session is not None:
-            slots = get_slots(session)
-            new_min_date = get_min_date(slots)
-            print(new_min_date)
-            if (min_date is None) or (min_date != new_min_date):
-                min_date = new_min_date
-                send_message_to_all('New date is available: ' + datetime.strftime(min_date, '%Y-%m-%d'))
+            try:
+                slots = get_slots(session)
+                new_min_date = get_min_date(slots)
+                print(new_min_date)
+                if (min_date is None) or (min_date != new_min_date):
+                    min_date = new_min_date
+                    send_message_to_all('New date is available: ' + datetime.strftime(min_date, '%Y-%m-%d'))
 
-            sleep(random.randrange(500, 800))
+                last_update = datetime.now()
+                sleep(random.randrange(500, 800))
+            except:
+                send_message_to_all('Here is some problems')
+                session = None
         sleep(1)
 
 
@@ -29,6 +36,10 @@ def get_min_date(source):
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     subscribed_users.append(update.effective_chat.id)
     await context.bot.send_message(chat_id=update.effective_chat.id, text="I've saved you to list")
+
+
+async def status(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await context.bot.send_message(chat_id=update.effective_chat.id, text=datetime.strftime(min_date, '%Y-%m-%d %H:%M:%S'))
 
 
 async def set_session(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -62,6 +73,7 @@ if __name__ == '__main__':
     subscribed_users = []
     messages_stack = []
     min_date: datetime = None
+    last_update: datetime = None
 
     application = ApplicationBuilder().token(BOT_TOKEN).build()
 
@@ -73,6 +85,9 @@ if __name__ == '__main__':
 
     set_session_handler = CommandHandler('set_session', set_session)
     application.add_handler(set_session_handler)
+
+    status_handler = CommandHandler('status', status)
+    application.add_handler(status_handler)
 
     loop_thread = Thread(target=loop)
     loop_thread.start()
