@@ -1,4 +1,5 @@
 from ais_connector import AisSession, get_slots
+from config import BOT_TOKEN
 from telegram import Update
 from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler
 from threading import Thread
@@ -15,11 +16,16 @@ def loop():
         if session is not None:
             try:
                 slots = get_slots(session)
-                new_min_date = get_min_date(slots)
-                print(new_min_date)
-                if (min_date is None) or (min_date != new_min_date):
-                    min_date = new_min_date
-                    send_message_to_all('New date is available: ' + datetime.strftime(min_date, '%Y-%m-%d'))
+                if len(slots) > 0:
+                    new_min_date = get_min_date(slots)
+                    print(new_min_date)
+                    if (min_date is None) or (min_date != new_min_date):
+                        min_date = new_min_date
+                        send_message_to_all('New date available: ' + datetime.strftime(min_date, '%Y-%m-%d'))
+                else:
+                    if min_date is not None:
+                        min_date = None
+                        send_message_to_all('No dates available')
 
                 last_update = datetime.now()
                 sleep(random.randrange(500, 800))
@@ -72,7 +78,6 @@ def send_message_to_all(text):
 
 
 if __name__ == '__main__':
-    BOT_TOKEN = ''
     session: AisSession = None
     subscribed_users = []
     messages_stack = []
