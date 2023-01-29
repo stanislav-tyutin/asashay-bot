@@ -1,11 +1,14 @@
-from ais_connector import AisSession, get_slots
-from config import BOT_TOKEN
+from ais_connector import AisSession, get_slots, create_session
+from config import BOT_TOKEN, LOGIN, PASSWORD
 from telegram import Update
 from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler
-from threading import Thread
+from threading import Thread, Event
 from time import sleep
 from datetime import datetime
 import random
+import traceback
+import logging
+import sys
 
 
 def loop():
@@ -13,25 +16,35 @@ def loop():
     global session
     global last_update
     while True:
-        if session is not None:
+        if session is None:
+            session = create_session(LOGIN, PASSWORD)
+            sleep(random.randrange(2, 5))
+            logging.info('Session created')
+            send_message_to_all('Session created')
+        else:
             try:
-                slots = get_slots(session)
-                if len(slots) > 0:
-                    new_min_date = get_min_date(slots)
-                    print(new_min_date)
-                    if (min_date is None) or (min_date != new_min_date):
-                        min_date = new_min_date
-                        send_message_to_all('New date available: ' + datetime.strftime(min_date, '%Y-%m-%d'))
-                else:
-                    if min_date is not None:
-                        min_date = None
-                        send_message_to_all('No dates available')
+                has_data, slots = get_slots(session)
+                if has_data:
+                    if len(slots) > 0:
+                        new_min_date = get_min_date(slots)
+                        if (min_date is None) or (min_date != new_min_date):
+                            min_date = new_min_date
+                            send_message_to_all('New date available: ' + datetime.strftime(min_date, '%Y-%m-%d'))
+                    else:
+                        if min_date is not None:
+                            min_date = None
+                            send_message_to_all('No dates available')
 
                 last_update = datetime.now()
-                sleep(random.randrange(500, 800))
-            except:
+
+                sleep(random.randrange(30, 200))
+
+            except Exception as e:
+                traceback.print_exc()
                 send_message_to_all('Here is some problems')
+                logging.warning('Here is some problems')
                 session = None
+
         sleep(1)
 
 
@@ -40,7 +53,7 @@ def get_min_date(source):
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    subscribed_users.append(update.effective_chat.id)
+    subscribed_users.add(update.effective_chat.id)
     await context.bot.send_message(chat_id=update.effective_chat.id, text="I've saved you to list")
 
 
@@ -50,16 +63,6 @@ async def status(update: Update, context: ContextTypes.DEFAULT_TYPE):
                                        text=datetime.strftime(last_update, '%Y-%m-%d %H:%M:%S'))
     else:
         await context.bot.send_message(chat_id=update.effective_chat.id, text='Never')
-
-
-async def set_session(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    global session
-    value = context.args[0]
-    if value is not None:
-        session = AisSession(value)
-        await context.bot.send_message(chat_id=update.effective_chat.id, text='Session saved')
-    else:
-        await context.bot.send_message(chat_id=update.effective_chat.id, text='Error')
 
 
 async def send_messages(context: ContextTypes.DEFAULT_TYPE):
@@ -78,11 +81,13 @@ def send_message_to_all(text):
 
 
 if __name__ == '__main__':
-    session: AisSession = None
-    subscribed_users = []
+    logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
+
+    session = None
+    subscribed_users = set()
     messages_stack = []
-    min_date: datetime = None
-    last_update: datetime = None
+    min_date = None
+    last_update = None
 
     application = ApplicationBuilder().token(BOT_TOKEN).build()
 
@@ -91,9 +96,6 @@ if __name__ == '__main__':
 
     start_handler = CommandHandler('start', start)
     application.add_handler(start_handler)
-
-    set_session_handler = CommandHandler('set_session', set_session)
-    application.add_handler(set_session_handler)
 
     status_handler = CommandHandler('status', status)
     application.add_handler(status_handler)

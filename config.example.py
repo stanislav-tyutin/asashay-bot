@@ -1,1 +1,3 @@
 BOT_TOKEN = ''
+LOGIN = ''
+PASSWORD = ''

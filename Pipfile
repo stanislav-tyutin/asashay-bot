@@ -6,6 +6,7 @@ name = "pypi"
 [packages]
 requests = "*"
 python-telegram-bot = {extras = ["job-queue"], version = "*"}
+pyquery = "==2.0.0"
 
 [dev-packages]
 
