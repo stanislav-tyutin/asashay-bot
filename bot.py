@@ -19,7 +19,7 @@ def loop():
         if session is None:
             session = create_session(LOGIN, PASSWORD)
             sleep(random.randrange(2, 5))
-            logging.info('Session created')
+            logging.warning('Session created')
             send_message_to_all('Session created')
         else:
             try:
@@ -81,7 +81,7 @@ def send_message_to_all(text):
 
 
 if __name__ == '__main__':
-    logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
+    logging.basicConfig(stream=sys.stdout, level=logging.WARNING)
 
     session = None
     subscribed_users = set()

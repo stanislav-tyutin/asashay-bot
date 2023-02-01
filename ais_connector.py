@@ -29,13 +29,13 @@ def get_slots(ais_session: AisSession):
     response = requests.get(url, cookies=cookies, headers=_api_headers(ais_session.get_etag()))
     ais_session.set_session(response.cookies.get('_yatri_session'))
     ais_session.set_etag(response.headers.get('ETag'))
-    logging.debug(f'GET SLOTS {response.status_code}')
+    logging.warning(f'GET SLOTS {response.status_code}')
     if response.status_code == 200:
         return True, json.loads(response.text)
     elif response.status_code == 304:
         return False, None
     else:
-        logging.debug(response.status_code, response.text)
+        logging.warning(response.status_code, response.text)
         raise RuntimeError('Unexpected response')
 
 
@@ -77,7 +77,7 @@ def _api_headers(etag):
     headers['Sec-Fetch-Site'] = 'same-origin'
     if etag is not None:
         headers['If-None-Match'] = etag
-        logging.debug(f'ETAG used {etag}')
+        logging.warning(f'ETAG used {etag}')
     return headers
 
 
